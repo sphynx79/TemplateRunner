@@ -1,5 +1,3 @@
-require "ap"
-
 
 @prefs = {}
 
@@ -10,37 +8,38 @@ def say_recipe(name); say "\033[1m\033[36m" + "recipe".rjust(10) + "\033[0m" + "
 def say_wizard(text); say_custom(@current_recipe || 'composer', text) end
 
 def ask_wizard(question)
-  ask "\033[1m\033[36m" + ("option").rjust(10) + "\033[1m\033[36m" + "  #{question}\033[0m"
+   ask "\033[1m\033[36m" + ("option").rjust(10) + "\033[1m\033[36m" + "  #{question}\033[0m"
 end
 
 def whisper_ask_wizard(question)
-  ask "\033[1m\033[36m" + ("choose").rjust(10) + "\033[0m" + "  #{question}"
+   ask "\033[1m\033[36m" + ("choose").rjust(10) + "\033[0m" + "  #{question}"
 end
 
 def yes_wizard?(question)
-  answer = ask_wizard(question + " \033[33m(y/n)\033[0m")
-  case answer.downcase
-    when "yes", "y"
+   answer = ask_wizard(question + " \033[33m(y/n)\033[0m")
+   case answer.downcase
+   when "yes", "y"
       true
-    when "no", "n"
+   when "no", "n"
       false
-    else
+   else
       yes_wizard?(question)
-  end
+   end
 end
 
 
 def multiple_choice(question, choices)
-  say_custom('option', "\033[1m\033[36m" + "#{question}\033[0m")
-  values = {}
-  choices.each_with_index do |choice,i|
-    values[(i + 1).to_s] = choice[1]
-    say_custom( (i + 1).to_s + ')', choice[0] )
-  end
-  answer = whisper_ask_wizard("Enter your selection:") while !values.keys.include?(answer)
-  values[answer]
+   say_custom('option', "\033[1m\033[36m" + "#{question}\033[0m")
+   values = {}
+   choices.each_with_index do |choice,i|
+      values[(i + 1).to_s] = choice[1]
+      say_custom( (i + 1).to_s + ')', choice[0] )
+   end
+   answer = whisper_ask_wizard("Enter your selection:") while !values.keys.include?(answer)
+   values[answer]
 end
 
+def prefer(key, value); @prefs[key].eql? value end
 
 say_wizard("\033[1m\033[36m" + "" + "\033[0m")
 say_wizard("\033[1m\033[36m" + ' _____       _ _' + "\033[0m")
@@ -55,18 +54,12 @@ say_wizard("\033[1m\033[36m" + '' + "\033[0m")
 
 
 
-
-
-
-
 # >-------------------------- Scelta preferenze utente --------------------------start<
-# ################################################################################### #
+#######################################################################################
 
-# Scelta frameork css da utilizzare
-@prefs[:css_framework] = multiple_choice "Choose a starter framework.",
-          [["bootstrap", "bootstrap"],
-          ["foundation", "foundation"],
-          ["none", "none"]]
+# Scelta framework css da utilizzare
+@prefs[:frontend] = multiple_choice "Choose a starter frontend.", [["no", "no"], ["bootstrap", "bootstrap"],["foundation", "foundation"]]
+@prefs.delete(:frontend) if @prefs[:frontend] == "no"
 
 # Scelta generazione controller
 @prefs[:controller] = yes_wizard? 'Do I need a root controller?'
@@ -74,44 +67,28 @@ if @prefs[:controller]
    answer = ask_wizard("What is my root controllers name?")
    @prefs[:controller] = answer 
 end
+@prefs.delete(:controller) if @prefs[:controller] == false
 
-# ################################################################################### #
+#####################################################################################
 # >-------------------------- Scelta preferenze utente --------------------------end
 
 
-ap @prefs
 
-exit
+# >-------------------------- Start Action --------------------------start<
+###########################################################################
 
+def init_bootstrap
+   say_wizard "init bootstrap"
 
-
-require_relative 'lib/utils'
-# Prendo il path del template
-path = File.expand_path File.dirname(__FILE__)
-
-# Mi chiede se voglio generare un controller e il nome del controller
-
-root_controller = yes? 'Do I need a root controller?'.green
-if root_controller
-   root_controller_name = ask("What is my root controllers name?".green).underscore
-end
-
-# Iniziallizza git
-git :init
-
-# Bootstrap: install from https://github.com/twbs/bootstrap
-# Note: This is 3.0.0
-# ==================================================
-if yes?("Download bootstrap?".green)
-  run "curl -s -L https://github.com/twbs/bootstrap/releases/download/v3.3.5/bootstrap-3.3.5-dist.zip -o bootstrap.zip", :verbose => false
-  run "unzip bootstrap.zip -d bootstrap > NUL && rm bootstrap.zip", :verbose => false
-  run "cp bootstrap/bootstrap-3.3.5-dist/css/bootstrap.css vendor/assets/stylesheets/", :verbose => false
-  run "cp bootstrap/bootstrap-3.3.5-dist/js/bootstrap.js vendor/assets/javascripts/", :verbose => false
-  run "cp -r bootstrap/bootstrap-3.3.5-dist/fonts vendor/assets/fonts/", :verbose => false
-  run "rm -rf bootstrap", :verbose => false
-  insert_into_file "app/assets/stylesheets/application.css", "*= require bootstrap\n ", :before => "*= require_tree .", :verbose => false
-  insert_into_file "app/assets/javascripts/application.js", "//= require bootstrap\n", :before => "//= require turbolinks", :verbose => false
-  append_to_file "app/assets/stylesheets/application.css", <<-EOF
+   run "curl -s -k -L https://github.com/twbs/bootstrap/releases/download/v3.3.5/bootstrap-3.3.5-dist.zip -o bootstrap.zip"
+   run "unzip bootstrap.zip -d bootstrap > NUL && rm bootstrap.zip"
+   run "cp bootstrap/bootstrap-3.3.5-dist/css/bootstrap.css vendor/assets/stylesheets/"
+   run "cp bootstrap/bootstrap-3.3.5-dist/js/bootstrap.js vendor/assets/javascripts/"
+   run "cp -r bootstrap/bootstrap-3.3.5-dist/fonts vendor/assets/fonts/"
+   run "rm -rf bootstrap"
+   insert_into_file "app/assets/stylesheets/application.css", "*= require bootstrap\n ", :before => "*= require_tree ."
+   insert_into_file "app/assets/javascripts/application.js", "//= require bootstrap\n", :before => "//= require turbolinks"
+   append_to_file "app/assets/stylesheets/application.css", <<-EOF
    @font-face {
       font-family: 'Glyphicons Halflings';
       src: url('../assets/glyphicons-halflings-regular.eot');
@@ -121,17 +98,68 @@ if yes?("Download bootstrap?".green)
       url('../assets/glyphicons-halflings-regular.svg#glyphicons_halflingsregular') format('svg');
    }
 
-  EOF
+   EOF
 end
 
-# rimuovo index.html
-remove_file "README.rdoc", :verbose => false
-remove_file "public/index.html", :verbose => false
+def init_foundation
+   say_wizard "init foundation"
 
-
-
-#Add root controller
-if root_controller
-  generate :controller, "#{root_controller_name} index", :verbose => false
-  route "root to: '#{root_controller_name}\#index'", :verbose => false
 end
+
+def init_controller(value)
+   say_wizard "init controller #{value}"
+   generate :controller, "#{value} index"
+   route "root to: '#{value}\#index'"
+end
+
+
+
+########################################################################
+# >-------------------------- Start Action --------------------------end
+
+
+
+# >-------------------------- Init Action --------------------------start<
+###########################################################################
+
+
+def init_frontend(value)
+   case value
+   when "bootstrap"
+      init_bootstrap
+   when "foundation"
+      init_foundation
+   end
+end
+
+
+
+
+########################################################################
+# >-------------------------- Init Action --------------------------end
+
+
+
+# >-------------------------- Parse Option --------------------------start<
+############################################################################
+
+@prefs.each { |pref, value|
+   case pref.to_s
+   when "frontend" 
+      @current_recipe = "frontend"
+      say_recipe("frontend")
+      init_frontend(value)
+   when "controller"
+      @current_recipe = "controller"
+      say_recipe("controller")
+      init_controller(value)
+   else
+      ""
+   end
+}
+exit 1
+
+#########################################################################
+# >-------------------------- Parse Option --------------------------end
+
+
