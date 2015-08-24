@@ -103,7 +103,14 @@ end
 
 def init_foundation
    say_wizard "init foundation"
-
+   run "curl -s -k -L http://foundation.zurb.com/cdn/releases/foundation-5.5.2.zip -o foundation.zip"
+   run "unzip foundation.zip -d foundation > NUL && rm  foundation.zip"
+   run "cp foundation/css/foundation.css vendor/assets/stylesheets/"
+   run "cp -r foundation/js/foundation vendor/assets/javascripts/foundation"
+   run "rm -rf foundation"
+   insert_into_file "app/assets/stylesheets/application.css", "*= require foundation\n ", :before => "*= require_tree ."
+   insert_into_file "app/assets/javascripts/application.js", "//= require_tree ../../../vendor/assets/javascripts/foundation\n", :before => "//= require turbolinks"
+   append_to_file "app/assets/javascripts/application.js", "$(document).foundation();"
 end
 
 def init_controller(value)
@@ -162,4 +169,6 @@ exit 1
 #########################################################################
 # >-------------------------- Parse Option --------------------------end
 
-
+####################COSE DA FARE###########################
+# Installare better_errors
+# Installare quiet_assets
